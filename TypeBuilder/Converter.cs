@@ -2,8 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace TypeBuilder
 {
@@ -15,11 +13,7 @@ namespace TypeBuilder
 
     public class NamedNode : Node
     {
-        public NamedNode(string name)
-        {
-            Name = name;
-        }
-
+        public NamedNode(string name) { Name = name; }
         public string Name { get; private set; }
     }
 
@@ -43,26 +37,26 @@ namespace TypeBuilder
 
         private Node Serialize(Type type, object obj)
         {
-            if (type == typeof(double))
-                return new Node { Type = NodeType.Double, Value = obj };
-            if (type == typeof(int))
-                return new Node { Type = NodeType.Integer, Value = obj };
-            if (type == typeof(string))
-                return new Node { Type = NodeType.String, Value = obj };
-            if (IsCollection(type))
-                return new Node { Type = NodeType.Array, Value = ParseArray(type, obj) };
+            var mappedType = Map(type);
 
-            return new Node { Type = NodeType.Object, Value = ParseObject(type, obj) };
+            if (mappedType == NodeType.Double
+                || mappedType == NodeType.Integer
+                || mappedType == NodeType.String)
+                return new Node { Type = mappedType, Value = obj };
+
+            if (mappedType == NodeType.Array)
+                return new Node { Type = mappedType, Value = ParseArray(type, (IList)obj) };
+
+            return new Node { Type = mappedType, Value = ParseObject(type, obj) };
         }
 
-        private object ParseArray(Type type, object value)
+        private object ParseArray(Type type, IList values)
         {
             var nodes = new List<Node>();
             var arrayType = type.GetGenericArguments()[0];
 
-            dynamic items = value;
-            foreach (var item in items)
-                nodes.Add(Serialize(arrayType, item));
+            foreach (var value in values)
+                nodes.Add(Serialize(arrayType, value));
 
             return nodes;
         }
@@ -75,29 +69,19 @@ namespace TypeBuilder
             foreach (var property in properties)
             {
                 NamedNode namedNode = new NamedNode(property.Name);
-                if (property.PropertyType == typeof(double))
+                namedNode.Type = Map(property.PropertyType);
+                if (namedNode.Type == NodeType.Double
+                    || namedNode.Type == NodeType.Integer
+                    || namedNode.Type == NodeType.String)
                 {
-                    namedNode.Type = NodeType.Double;
                     namedNode.Value = property.GetValue(obj);
                 }
-                else if (property.PropertyType == typeof(int))
+                else if (namedNode.Type == NodeType.Array)
                 {
-                    namedNode.Type = NodeType.Integer;
-                    namedNode.Value = property.GetValue(obj);
-                }
-                else if (property.PropertyType == typeof(string))
-                {
-                    namedNode.Type = NodeType.String;
-                    namedNode.Value = property.GetValue(obj);
-                }
-                else if (IsCollection(property.PropertyType))
-                {
-                    namedNode.Type = NodeType.Array;
-                    namedNode.Value = ParseArray(property.PropertyType, property.GetValue(obj));
+                    namedNode.Value = ParseArray(property.PropertyType, (IList)property.GetValue(obj));
                 }
                 else
                 {
-                    namedNode.Type = NodeType.Object;
                     namedNode.Value = ParseObject(property.PropertyType, property.GetValue(obj));
                 }
                 namedNodes.Add(namedNode);
@@ -110,7 +94,7 @@ namespace TypeBuilder
             return (T)Deserialize(typeof(T), node);
         }
 
-        public object Deserialize(Type type, Node node)
+        private object Deserialize(Type type, Node node)
         {
             if (type == typeof(double)
                 || type == typeof(int)
@@ -162,14 +146,14 @@ namespace TypeBuilder
 
         private NodeType Map(Type type)
         {
-            if (IsCollection(type))
-                return NodeType.Array;
             if (type == typeof(double))
                 return NodeType.Double;
             if (type == typeof(int))
                 return NodeType.Integer;
             if (type == typeof(string))
                 return NodeType.String;
+            if (IsCollection(type))
+                return NodeType.Array;
             return NodeType.Object;
         }
 
@@ -177,7 +161,8 @@ namespace TypeBuilder
         {
             foreach (var @interface in type.GetInterfaces())
             {
-                if (@interface.GetGenericTypeDefinition() == typeof(IList<>))
+                if (@interface.GenericTypeArguments.Any()
+                    && @interface.GetGenericTypeDefinition() == typeof(IList<>))
                     return true;
             }
             return false;

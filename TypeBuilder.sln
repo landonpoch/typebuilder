@@ -7,7 +7,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TypeBuilder.Tests", "TypeBu
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TypeBuilder", "TypeBuilder\TypeBuilder.csproj", "{A2914F17-AC72-4147-A5E7-DF7FA3FA0E8C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TypeBuilder.Console", "TypeBuilder.Console\TypeBuilder.Console.csproj", "{0D58FF66-E6A0-4F06-B98E-4552C2BD627C}"
+EndProject
 Global
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
@@ -21,6 +26,10 @@ Global
 		{A2914F17-AC72-4147-A5E7-DF7FA3FA0E8C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A2914F17-AC72-4147-A5E7-DF7FA3FA0E8C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A2914F17-AC72-4147-A5E7-DF7FA3FA0E8C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0D58FF66-E6A0-4F06-B98E-4552C2BD627C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0D58FF66-E6A0-4F06-B98E-4552C2BD627C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0D58FF66-E6A0-4F06-B98E-4552C2BD627C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0D58FF66-E6A0-4F06-B98E-4552C2BD627C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

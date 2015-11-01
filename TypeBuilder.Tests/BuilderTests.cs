@@ -1,9 +1,5 @@
-﻿using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using TypeBuilder;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
-using System.Reflection;
-using System.Collections;
 
 namespace TypeBuilder.Tests
 {
