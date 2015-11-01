@@ -47,6 +47,7 @@ namespace TypeBuilder.Tests
                 FirstName = "Landon",
                 LastName = "Poch",
                 Age = 32,
+                NetWorth = 450000.12M, // TODO: Test other types
                 HomeAddress = new Address
                 {
                     Street1 = "678 Appletree Dr.",
@@ -76,6 +77,8 @@ namespace TypeBuilder.Tests
         public List<string> Quotes { get; set; }
 
         public Address HomeAddress { get; set; }
+
+        public decimal NetWorth { get; set; }
     }
 
     public class Address

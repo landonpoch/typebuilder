@@ -97,6 +97,7 @@ namespace TypeBuilder
         private object Deserialize(Type type, Node node)
         {
             if (type == typeof(double)
+                || type == typeof(decimal) // TODO: Add other types
                 || type == typeof(int)
                 || type == typeof(string))
                 return node.Value;
@@ -125,6 +126,7 @@ namespace TypeBuilder
                 if (child != null)
                 {
                     if (property.PropertyType == typeof(double)
+                        || property.PropertyType == typeof(decimal) // TODO: Add other types
                         || property.PropertyType == typeof(int)
                         || property.PropertyType == typeof(string))
                     {
@@ -146,7 +148,8 @@ namespace TypeBuilder
 
         private NodeType Map(Type type)
         {
-            if (type == typeof(double))
+            if (type == typeof(double)
+                || type == typeof(decimal)) // TODO: Add other types
                 return NodeType.Double;
             if (type == typeof(int))
                 return NodeType.Integer;
