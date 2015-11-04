@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 
 namespace TypeBuilder
 {
@@ -24,24 +25,33 @@ namespace TypeBuilder
         Double,
         Integer,
         Object,
-        String
+        String,
+        Null,
+        Boolean
     }
 
     public class Converter
     {
+        private IDictionary<Type, PropertyInfo[]> _getCache = new Dictionary<Type, PropertyInfo[]>();
+        private IDictionary<Type, Type[]> _genericCache = new Dictionary<Type, Type[]>();
+        private IDictionary<Type, NodeType> _mapCache = new Dictionary<Type, NodeType>();
+
         public Node Serialize<T>(T obj)
         {
-            var type = obj.GetType();
-            return Serialize(type, obj);
+            return Serialize(typeof(T), obj);
         }
 
         private Node Serialize(Type type, object obj)
         {
             var mappedType = Map(type);
 
+            if (obj == null)
+                return new Node { Type = NodeType.Null, Value = null };
+
             if (mappedType == NodeType.Double
                 || mappedType == NodeType.Integer
-                || mappedType == NodeType.String)
+                || mappedType == NodeType.String
+                || mappedType == NodeType.Boolean)
                 return new Node { Type = mappedType, Value = obj };
 
             if (mappedType == NodeType.Array)
@@ -53,17 +63,25 @@ namespace TypeBuilder
         private object ParseArray(Type type, IList values)
         {
             var nodes = new List<Node>();
-            var arrayType = type.GetGenericArguments()[0];
+            var cached = _genericCache.ContainsKey(type);
+            var genericTypes = cached
+                ? _genericCache[type]
+                : type.GetGenericArguments();
+            if (!cached) _genericCache[type] = genericTypes;
 
             foreach (var value in values)
-                nodes.Add(Serialize(arrayType, value));
+                nodes.Add(Serialize(genericTypes[0], value));
 
             return nodes;
         }
 
         private object ParseObject(Type type, object obj)
         {
-            var properties = type.GetProperties();
+            var cached = _getCache.ContainsKey(type);
+            var properties =  cached
+                ? _getCache[type] 
+                : type.GetProperties();
+            if (!cached) _getCache[type] = properties;
 
             var namedNodes = new List<NamedNode>();
             foreach (var property in properties)
@@ -72,7 +90,8 @@ namespace TypeBuilder
                 namedNode.Type = Map(property.PropertyType);
                 if (namedNode.Type == NodeType.Double
                     || namedNode.Type == NodeType.Integer
-                    || namedNode.Type == NodeType.String)
+                    || namedNode.Type == NodeType.String
+                    || namedNode.Type == NodeType.Boolean)
                 {
                     namedNode.Value = property.GetValue(obj);
                 }
@@ -96,10 +115,14 @@ namespace TypeBuilder
 
         private object Deserialize(Type type, Node node)
         {
+            if (node.Type == NodeType.Null)
+                return null;
+
             if (type == typeof(double)
                 || type == typeof(decimal) // TODO: Add other types
                 || type == typeof(int)
-                || type == typeof(string))
+                || type == typeof(string)
+                || type == typeof(bool))
                 return node.Value;
             if (IsCollection(type))
                 return ParseArrayNode(type, (List<Node>)node.Value);
@@ -110,16 +133,28 @@ namespace TypeBuilder
         public object ParseArrayNode(Type type, List<Node> children)
         {
             var array = (IList)Activator.CreateInstance(type);
-            var arrayType = type.GetGenericArguments()[0];
+
+            var cached = _genericCache.ContainsKey(type);
+            var genericTypes = cached
+                ? _genericCache[type]
+                : type.GetGenericArguments();
+            if (!cached) _genericCache[type] = genericTypes;
+
             foreach (var child in children)
-                array.Add(Deserialize(arrayType, child));
+                array.Add(Deserialize(genericTypes[0], child));
             return array;
         }
 
         public object ParseObjectNode(Type type, List<NamedNode> children)
         {
             var instance = Activator.CreateInstance(type);
-            var properties = type.GetProperties();
+
+            var cached = _getCache.ContainsKey(type);
+            var properties = cached
+                ? _getCache[type]
+                : type.GetProperties();
+            if (!cached) _getCache[type] = properties;
+
             foreach (var property in properties)
             {
                 var child = children.FirstOrDefault(c => c.Name == property.Name);
@@ -128,7 +163,8 @@ namespace TypeBuilder
                     if (property.PropertyType == typeof(double)
                         || property.PropertyType == typeof(decimal) // TODO: Add other types
                         || property.PropertyType == typeof(int)
-                        || property.PropertyType == typeof(string))
+                        || property.PropertyType == typeof(string)
+                        || property.PropertyType == typeof(bool))
                     {
                         property.SetValue(instance, child.Value);
                     }
@@ -148,6 +184,17 @@ namespace TypeBuilder
 
         private NodeType Map(Type type)
         {
+            var cached = _mapCache.ContainsKey(type);
+            NodeType nodeType = cached
+                ? _mapCache[type]
+                : UnCachedMap(type);
+            if (!cached) _mapCache[type] = nodeType;
+
+            return nodeType;
+        }
+
+        private NodeType UnCachedMap(Type type)
+        {
             if (type == typeof(double)
                 || type == typeof(decimal)) // TODO: Add other types
                 return NodeType.Double;
@@ -155,6 +202,8 @@ namespace TypeBuilder
                 return NodeType.Integer;
             if (type == typeof(string))
                 return NodeType.String;
+            if (type == typeof(bool))
+                return NodeType.Boolean;
             if (IsCollection(type))
                 return NodeType.Array;
             return NodeType.Object;
