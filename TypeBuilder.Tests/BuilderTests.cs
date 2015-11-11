@@ -56,6 +56,7 @@ namespace TypeBuilder.Tests
                     State = "UT",
                     Zip = "84070"
                 },
+                WorkAddress = null,
                 Quotes = new List<string>
                 {
                     "This",
@@ -78,6 +79,8 @@ namespace TypeBuilder.Tests
         public List<string> Quotes { get; set; }
 
         public Address HomeAddress { get; set; }
+
+        public Address WorkAddress { get; set; }
 
         public decimal NetWorth { get; set; }
 

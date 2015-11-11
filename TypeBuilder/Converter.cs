@@ -87,21 +87,23 @@ namespace TypeBuilder
             foreach (var property in properties)
             {
                 NamedNode namedNode = new NamedNode(property.Name);
-                namedNode.Type = Map(property.PropertyType);
-                if (namedNode.Type == NodeType.Double
-                    || namedNode.Type == NodeType.Integer
-                    || namedNode.Type == NodeType.String
-                    || namedNode.Type == NodeType.Boolean)
+                var propertyVal = property.GetValue(obj);
+                namedNode.Type = propertyVal == null ? NodeType.Null : Map(property.PropertyType);
+                switch (namedNode.Type)
                 {
-                    namedNode.Value = property.GetValue(obj);
-                }
-                else if (namedNode.Type == NodeType.Array)
-                {
-                    namedNode.Value = ParseArray(property.PropertyType, (IList)property.GetValue(obj));
-                }
-                else
-                {
-                    namedNode.Value = ParseObject(property.PropertyType, property.GetValue(obj));
+                    case NodeType.Null:
+                    case NodeType.Double:
+                    case NodeType.Integer:
+                    case NodeType.String:
+                    case NodeType.Boolean:
+                        namedNode.Value = propertyVal;
+                        break;
+                    case NodeType.Array:
+                        namedNode.Value = ParseArray(property.PropertyType, (IList)propertyVal);
+                        break;
+                    case NodeType.Object:
+                        namedNode.Value = ParseObject(property.PropertyType, propertyVal);
+                        break;
                 }
                 namedNodes.Add(namedNode);
             }
@@ -158,7 +160,7 @@ namespace TypeBuilder
             foreach (var property in properties)
             {
                 var child = children.FirstOrDefault(c => c.Name == property.Name);
-                if (child != null)
+                if (child != null && child.Value != null)
                 {
                     if (property.PropertyType == typeof(double)
                         || property.PropertyType == typeof(decimal) // TODO: Add other types
