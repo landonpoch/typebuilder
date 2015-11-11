@@ -43,21 +43,21 @@ namespace TypeBuilder
 
         private Node Serialize(Type type, object obj)
         {
-            var mappedType = Map(type);
-
-            if (obj == null)
-                return new Node { Type = NodeType.Null, Value = null };
-
-            if (mappedType == NodeType.Double
-                || mappedType == NodeType.Integer
-                || mappedType == NodeType.String
-                || mappedType == NodeType.Boolean)
-                return new Node { Type = mappedType, Value = obj };
-
-            if (mappedType == NodeType.Array)
-                return new Node { Type = mappedType, Value = ParseArray(type, (IList)obj) };
-
-            return new Node { Type = mappedType, Value = ParseObject(type, obj) };
+            var mappedType = obj == null ? NodeType.Null : Map(type);
+            switch (mappedType)
+            {
+                case NodeType.Null:
+                case NodeType.Double:
+                case NodeType.Integer:
+                case NodeType.String:
+                case NodeType.Boolean:
+                    return new Node { Type = mappedType, Value = obj };
+                case NodeType.Array:
+                    return new Node { Type = mappedType, Value = ParseArray(type, (IList)obj) };
+                case NodeType.Object:
+                default:
+                    return new Node { Type = mappedType, Value = ParseObject(type, obj) };
+            }
         }
 
         private object ParseArray(Type type, IList values)
